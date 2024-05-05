@@ -1,16 +1,16 @@
 {
   "private": true,
   "displayName": "Homebridge Web Scraper Temperature sensor",
-  "name": "@majsterkoo/homebridge-web-scraper-sensor",
+  "name": "@majsterkoo/homebridge-temperature-web-scraper-sensor",
   "version": "1.0.0",
-  "description": "A short description about what your plugin does.",
+  "description": "Homebridge plugin for temperature sensor that scrapes data from a website",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/USERNAME/GITHUB_PROJECT_NAME.git"
+    "url": "git+https://github.com/majsterkoo/homebridge-temperature-web-scraper-sensor.git"
   },
   "bugs": {
-    "url": "https://github.com/USERNAME/GITHUB_PROJECT_NAME/issues"
+    "url": "https://github.com/majsterkoo/homebridge-temperature-web-scraper-sensor/issues"
   },
   "engines": {
     "node": "^18.17.0 || ^20.9.0",
@@ -24,7 +24,9 @@
     "prepublishOnly": "npm run lint && npm run build"
   },
   "keywords": [
-    "homebridge-plugin"
+    "homebridge-plugin",
+    "temperature sensor",
+    "web scrape sensor"
   ],
   "devDependencies": {
     "@types/node": "^20.12.7",

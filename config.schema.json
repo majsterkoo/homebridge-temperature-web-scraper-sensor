@@ -1,5 +1,5 @@
 {
-  "pluginAlias": "ExampleHomebridgePlugin",
+  "pluginAlias": "WebScrapeTemperatureHomebridgePlugin",
   "pluginType": "platform",
   "singular": true,
   "schema": {
