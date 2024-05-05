@@ -30,19 +30,24 @@ export class ThermometerPlatformAccessory {
     private readonly platform: ThermometerPlatform,
     private readonly accessory: PlatformAccessory
   ) {
-    this.platform.log.debug("Foo debug");
+    const url = new URL(accessory.context.device.url);
+    const hostname = url.hostname;
+    const path = url.pathname;
 
     // set accessory information
     this.accessory
       .getService(this.platform.Service.AccessoryInformation)!
       .setCharacteristic(
         this.platform.Characteristic.Manufacturer,
-        "Default-Manufacturer"
+        accessory.context.device.manufacturer || hostname
       )
-      .setCharacteristic(this.platform.Characteristic.Model, "Default-Model")
+      .setCharacteristic(
+        this.platform.Characteristic.Model,
+        accessory.context.device.model || path
+      )
       .setCharacteristic(
         this.platform.Characteristic.SerialNumber,
-        "Default-Serial"
+        accessory.context.device.serial || accessory.UUID
       );
 
     // get the LightBulb service if it exists, otherwise create a new LightBulb service

@@ -34,6 +34,24 @@
               "type": "number",
               "required": false,
               "default": 60
+            },
+            "manufacturer": {
+              "title": "Manufacturer",
+              "type": "string",
+              "placeholder": "Manufacturer",
+              "description": "Manufacturer of your thermometer."
+            },
+            "model": {
+              "title": "Model",
+              "type": "string",
+              "placeholder": "Model",
+              "description": "Thermometer model."
+            },
+            "serial": {
+              "title": "Serial number",
+              "type": "string",
+              "placeholder": "serial number",
+              "description": "Serial number of your thermometer."
             }
           }
         }
