@@ -1,72 +1,67 @@
-import { Service, PlatformAccessory, CharacteristicValue } from 'homebridge';
+import { Service, PlatformAccessory, CharacteristicValue } from "homebridge";
+import axios from "axios";
+import { JSDOM } from "jsdom";
 
-import { ExampleHomebridgePlatform } from './platform';
+import { ThermometerPlatform } from "./platform";
+
+type StatusType = {
+  temperature: number;
+  fault: 0 | 1;
+};
 
 /**
  * Platform Accessory
  * An instance of this class is created for each accessory your platform registers
  * Each accessory may expose multiple services of different service types.
  */
-export class ExamplePlatformAccessory {
+export class ThermometerPlatformAccessory {
   private service: Service;
 
   /**
    * These are just used to create a working example
    * You should implement your own code to track the state of your accessory
    */
-  private exampleStates = {
-    On: false,
-    Brightness: 100,
+  private status: StatusType = {
+    temperature: 0,
+    fault: 0,
   };
 
   constructor(
-    private readonly platform: ExampleHomebridgePlatform,
-    private readonly accessory: PlatformAccessory,
+    private readonly platform: ThermometerPlatform,
+    private readonly accessory: PlatformAccessory
   ) {
+    this.platform.log.debug("Foo debug");
 
     // set accessory information
-    this.accessory.getService(this.platform.Service.AccessoryInformation)!
-      .setCharacteristic(this.platform.Characteristic.Manufacturer, 'Default-Manufacturer')
-      .setCharacteristic(this.platform.Characteristic.Model, 'Default-Model')
-      .setCharacteristic(this.platform.Characteristic.SerialNumber, 'Default-Serial');
+    this.accessory
+      .getService(this.platform.Service.AccessoryInformation)!
+      .setCharacteristic(
+        this.platform.Characteristic.Manufacturer,
+        "Default-Manufacturer"
+      )
+      .setCharacteristic(this.platform.Characteristic.Model, "Default-Model")
+      .setCharacteristic(
+        this.platform.Characteristic.SerialNumber,
+        "Default-Serial"
+      );
 
     // get the LightBulb service if it exists, otherwise create a new LightBulb service
     // you can create multiple services for each accessory
-    this.service = this.accessory.getService(this.platform.Service.Lightbulb) || this.accessory.addService(this.platform.Service.Lightbulb);
+    this.service =
+      this.accessory.getService(this.platform.Service.TemperatureSensor) ||
+      this.accessory.addService(this.platform.Service.TemperatureSensor);
 
     // set the service name, this is what is displayed as the default name on the Home app
     // in this example we are using the name we stored in the `accessory.context` in the `discoverDevices` method.
-    this.service.setCharacteristic(this.platform.Characteristic.Name, accessory.context.device.exampleDisplayName);
+    this.service.setCharacteristic(
+      this.platform.Characteristic.Name,
+      accessory.context.device.exampleDisplayName
+    );
 
-    // each service must implement at-minimum the "required characteristics" for the given service type
-    // see https://developers.homebridge.io/#/service/Lightbulb
-
-    // register handlers for the On/Off Characteristic
-    this.service.getCharacteristic(this.platform.Characteristic.On)
-      .onSet(this.setOn.bind(this))                // SET - bind to the `setOn` method below
-      .onGet(this.getOn.bind(this));               // GET - bind to the `getOn` method below
-
-    // register handlers for the Brightness Characteristic
-    this.service.getCharacteristic(this.platform.Characteristic.Brightness)
-      .onSet(this.setBrightness.bind(this));       // SET - bind to the 'setBrightness` method below
-
-    /**
-     * Creating multiple services of the same type.
-     *
-     * To avoid "Cannot add a Service with the same UUID another Service without also defining a unique 'subtype' property." error,
-     * when creating multiple services of the same type, you need to use the following syntax to specify a name and subtype id:
-     * this.accessory.getService('NAME') || this.accessory.addService(this.platform.Service.Lightbulb, 'NAME', 'USER_DEFINED_SUBTYPE_ID');
-     *
-     * The USER_DEFINED_SUBTYPE must be unique to the platform accessory (if you platform exposes multiple accessories, each accessory
-     * can use the same subtype id.)
-     */
-
-    // Example: add two "motion sensor" services to the accessory
-    const motionSensorOneService = this.accessory.getService('Motion Sensor One Name') ||
-      this.accessory.addService(this.platform.Service.MotionSensor, 'Motion Sensor One Name', 'YourUniqueIdentifier-1');
-
-    const motionSensorTwoService = this.accessory.getService('Motion Sensor Two Name') ||
-      this.accessory.addService(this.platform.Service.MotionSensor, 'Motion Sensor Two Name', 'YourUniqueIdentifier-2');
+    // create handlers for required characteristics
+    this.service
+      .getCharacteristic(this.platform.Characteristic.CurrentTemperature)
+      .onGet(() => this.status.temperature);
 
     /**
      * Updating characteristics values asynchronously.
@@ -77,29 +72,11 @@ export class ExamplePlatformAccessory {
      * the `updateCharacteristic` method.
      *
      */
-    let motionDetected = false;
+    this.updateCurrentTemperature();
+
     setInterval(() => {
-      // EXAMPLE - inverse the trigger
-      motionDetected = !motionDetected;
-
-      // push the new value to HomeKit
-      motionSensorOneService.updateCharacteristic(this.platform.Characteristic.MotionDetected, motionDetected);
-      motionSensorTwoService.updateCharacteristic(this.platform.Characteristic.MotionDetected, !motionDetected);
-
-      this.platform.log.debug('Triggering motionSensorOneService:', motionDetected);
-      this.platform.log.debug('Triggering motionSensorTwoService:', !motionDetected);
-    }, 10000);
-  }
-
-  /**
-   * Handle "SET" requests from HomeKit
-   * These are sent when the user changes the state of an accessory, for example, turning on a Light bulb.
-   */
-  async setOn(value: CharacteristicValue) {
-    // implement your own code to turn your device on/off
-    this.exampleStates.On = value as boolean;
-
-    this.platform.log.debug('Set Characteristic On ->', value);
+      this.updateCurrentTemperature();
+    }, accessory.context.device.refreshInterval * 1000);
   }
 
   /**
@@ -115,27 +92,35 @@ export class ExamplePlatformAccessory {
    * @example
    * this.service.updateCharacteristic(this.platform.Characteristic.On, true)
    */
-  async getOn(): Promise<CharacteristicValue> {
-    // implement your own code to check if the device is on
-    const isOn = this.exampleStates.On;
+  async updateCurrentTemperature(): Promise<void> {
+    this.platform.log.debug("Triggered GET CurrentTemperature");
+    try {
+      const response = await axios.get(this.accessory.context.device.url);
+      const dom = new JSDOM(response.data);
 
-    this.platform.log.debug('Get Characteristic On ->', isOn);
+      const element = dom.window.document.querySelector(
+        this.accessory.context.device.elementSelector
+      );
 
-    // if you need to return an error to show the device as "Not Responding" in the Home app:
-    // throw new this.platform.api.hap.HapStatusError(this.platform.api.hap.HAPStatus.SERVICE_COMMUNICATION_FAILURE);
+      if (!element || !element.textContent) {
+        throw new Error("Element not found");
+      }
 
-    return isOn;
+      this.status.temperature = parseFloat(element.textContent);
+      this.status.fault = 0;
+      this.service
+        .getCharacteristic(this.platform.Characteristic.CurrentTemperature)
+        .updateValue(this.status.temperature);
+      this.service
+        .getCharacteristic(this.platform.Characteristic.StatusFault)
+        .updateValue(0);
+    } catch (error) {
+      this.platform.log.error("Error updating characteristics:", error);
+      this.status.fault = 1;
+      this.service
+        .getCharacteristic(this.platform.Characteristic.StatusFault)
+        .updateValue(1);
+    }
+    // random between 0 and 70
   }
-
-  /**
-   * Handle "SET" requests from HomeKit
-   * These are sent when the user changes the state of an accessory, for example, changing the Brightness
-   */
-  async setBrightness(value: CharacteristicValue) {
-    // implement your own code to set the brightness
-    this.exampleStates.Brightness = value as number;
-
-    this.platform.log.debug('Set Characteristic Brightness -> ', value);
-  }
-
 }

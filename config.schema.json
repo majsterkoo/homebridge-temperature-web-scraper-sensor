@@ -5,11 +5,38 @@
   "schema": {
     "type": "object",
     "properties": {
-      "name": {
-        "title": "Name",
-        "type": "string",
-        "required": true,
-        "default": "Example Dynamic Platform"
+      "thermometers": {
+        "title": "Thermometers",
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "title": "Name",
+              "type": "string",
+              "required": true,
+              "default": "Example Dynamic Platform"
+            },
+            "url": {
+              "title": "URL",
+              "type": "string",
+              "required": true,
+              "default": "http://example.com"
+            },
+            "elementSelector": {
+              "title": "Element Selector",
+              "type": "string",
+              "required": true,
+              "default": "body"
+            },
+            "refreshInterval": {
+              "title": "Refresh Interval",
+              "type": "number",
+              "required": false,
+              "default": 60
+            }
+          }
+        }
       }
     }
   }
